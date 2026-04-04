@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Meet Time Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1a1a2e;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+
+    /* Top bar */
+    .top-bar {
+      max-width: 900px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .top-bar label {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .top-bar input[type="time"] {
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .top-bar input[type="time"]:focus { border-color: #4f46e5; }
+
+    .end-time-display {
+      font-size: 14px;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    .end-time-display strong { color: #4f46e5; }
+
+    /* Gender order toggle */
+    .gender-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .gender-toggle input[type="checkbox"] { display: none; }
+
+    /* pill switch */
+    .switch-track {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      background: #d1d5db;
+      border-radius: 99px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .switch-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .gender-toggle.on .switch-track { background: #be185d; }
+    .gender-toggle.on .switch-thumb { transform: translateX(16px); }
+
+    .toggle-label-boys  { color: #1d4ed8; font-weight: 600; }
+    .toggle-label-girls { color: #be185d; font-weight: 600; }
+
+    .spacer { flex: 1; }
+
+    .edit-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .edit-btn:hover { border-color: #4f46e5; color: #4f46e5; }
+    .edit-btn svg { width: 14px; height: 14px; }
+
+    /* Main card */
+    .card {
+      max-width: 900px;
+      margin: 0 auto 18px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      text-align: left;
+      padding: 10px 18px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f3f4f6;
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+
+    tbody td { padding: 11px 18px; font-size: 14px; }
+
+    .event-name { font-weight: 600; font-size: 14px; }
+    .event-name.boys  { color: #1d4ed8; }
+    .event-name.girls { color: #be185d; }
+
+    .dim { color: #d1d5db; }
+
+    input[type="number"].heats-input {
+      width: 68px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 14px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="number"].heats-input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+    }
+
+    .row-total { font-weight: 600; color: #111827; }
+    .row-total.zero { color: #d1d5db; font-weight: 400; }
+
+    /* Summary */
+    .summary {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      background: #1a1a2e;
+      border-radius: 12px;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+
+    .summary-label { font-size: 13px; color: #9ca3af; margin-bottom: 2px; }
+    .summary-value { font-size: 28px; font-weight: 700; color: #fff; }
+    .summary-value.accent { color: #818cf8; }
+
+    .reset-btn {
+      background: transparent;
+      border: 1.5px solid #4b5563;
+      color: #9ca3af;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .reset-btn:hover { border-color: #818cf8; color: #818cf8; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h2 { font-size: 17px; font-weight: 600; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #9ca3af;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+
+    .modal-close:hover { color: #374151; }
+
+    .modal-body {
+      overflow-y: auto;
+      padding: 16px 22px;
+      flex: 1;
+    }
+
+    .modal-table { width: 100%; border-collapse: collapse; }
+
+    .modal-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      padding: 6px 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-table td {
+      padding: 8px 8px;
+      font-size: 14px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .modal-table tr:last-child td { border-bottom: none; }
+    .modal-table .event-name { font-weight: 600; }
+    .modal-table .event-name.boys  { color: #1d4ed8; }
+    .modal-table .event-name.girls { color: #be185d; }
+
+    .modal-input {
+      width: 72px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      padding: 5px 8px;
+      font-size: 13px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .modal-input:focus { border-color: #4f46e5; }
+
+    .modal-footer {
+      padding: 14px 22px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-reset-defaults {
+      background: none;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-reset-defaults:hover { border-color: #f59e0b; color: #d97706; }
+
+    .modal-footer-right {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-cancel {
+      background: #f3f4f6;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #374151;
+      transition: background 0.15s;
+    }
+
+    .btn-cancel:hover { background: #e5e7eb; }
+
+    .btn-save {
+      background: #4f46e5;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      transition: background 0.15s;
+    }
+
+    .btn-save:hover { background: #4338ca; }
+  </style>
+</head>
+<body>
+
+<h1>Track Meet Time Calculator</h1>
+
+<div class="top-bar">
+  <label for="startTime">Meet start:</label>
+  <input type="time" id="startTime" value="09:00" />
+  <div class="end-time-display">Estimated end: <strong id="endTimeDisplay">—</strong></div>
+
+  <div class="spacer"></div>
+
+  <!-- Girls-first toggle -->
+  <div class="gender-toggle" id="genderToggle" onclick="toggleGenderOrder()">
+    <span class="toggle-label-boys">Boys</span>
+    <div class="switch-track"><div class="switch-thumb"></div></div>
+    <span class="toggle-label-girls">Girls first</span>
+  </div>
+
+  <button class="edit-btn" onclick="openModal()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/>
+    </svg>
+    Edit default times
+  </button>
+</div>
+
+<div class="card">
+  <table id="mainTable">
+    <thead>
+      <tr>
+        <th style="width:36%">Event</th>
+        <th style="width:18%">Heat duration</th>
+        <th style="width:18%">Setup (once)</th>
+        <th style="width:13%"># Heats</th>
+        <th style="width:15%">Total time</th>
+      </tr>
+    </thead>
+    <tbody id="mainTbody"></tbody>
+  </table>
+</div>
+
+<div class="summary">
+  <div>
+    <div class="summary-label">Total running time</div>
+    <div class="summary-value accent" id="totalDisplay">0 min</div>
+  </div>
+  <div>
+    <div class="summary-label">In hours &amp; minutes</div>
+    <div class="summary-value" id="totalHMDisplay">0h 0m</div>
+  </div>
+  <button class="reset-btn" onclick="resetAll()">Reset all</button>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Edit default times</h2>
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th style="width:42%">Event</th>
+            <th style="width:29%">Heat duration (min)</th>
+            <th style="width:29%">Setup time (min)</th>
+          </tr>
+        </thead>
+        <tbody id="modalTbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-reset-defaults" onclick="resetModalToDefaults()">Reset to defaults</button>
+      <div class="modal-footer-right">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveModal()">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Default values — never mutated, used for "reset to defaults"
+  const DEFAULTS = [
+    { name: "4x100 Relay",  rows: [{ gender:"Boys",  heatMin:2.5,  setupMin:0 }, { gender:"Girls", heatMin:2.5,  setupMin:0 }] },
+    { name: "1600 Meters",  rows: [{ gender:"Boys",  heatMin:6.25, setupMin:0 }, { gender:"Girls", heatMin:7.5,  setupMin:0 }] },
+    { name: "100m Hurdles", rows: [{ gender:"Girls", heatMin:1.5,  setupMin:6 }] },
+    { name: "65m Hurdles",  rows: [{ gender:"Boys",  heatMin:1.25, setupMin:6 }, { gender:"Girls", heatMin:1.25, setupMin:6 }] },
+    { name: "110m Hurdles", rows: [{ gender:"Boys",  heatMin:1.25, setupMin:6 }] },
+    { name: "400 Meters",   rows: [{ gender:"Boys",  heatMin:2,    setupMin:0 }, { gender:"Girls", heatMin:2,    setupMin:0 }] },
+    { name: "100 Meters",   rows: [{ gender:"Boys",  heatMin:1.3,  setupMin:4 }, { gender:"Girls", heatMin:1.3,  setupMin:4 }] },
+    { name: "800 Meters",   rows: [{ gender:"Boys",  heatMin:3,    setupMin:0 }, { gender:"Girls", heatMin:4,    setupMin:0 }] },
+    { name: "300m Hurdles", rows: [{ gender:"Boys",  heatMin:2,    setupMin:7 }, { gender:"Girls", heatMin:2.5,  setupMin:7 }] },
+    { name: "200 Meters",   rows: [{ gender:"Boys",  heatMin:1.5,  setupMin:6 }, { gender:"Girls", heatMin:1.5,  setupMin:6 }] },
+    { name: "3200 Meters",  rows: [{ gender:"Boys",  heatMin:13,   setupMin:0 }, { gender:"Girls", heatMin:15,   setupMin:0 }] },
+    { name: "4x400 Relay",  rows: [{ gender:"Boys",  heatMin:8,    setupMin:0 }, { gender:"Girls", heatMin:8,    setupMin:0 }] },
+  ];
+
+  // Deep-clone defaults into live data
+  function cloneDefaults() {
+    return DEFAULTS.map(evt => ({
+      name: evt.name,
+      rows: evt.rows.map(r => ({ ...r }))
+    }));
+  }
+
+  let EVENTS = cloneDefaults();
+  let heatCounts = {};     // "ei-ri" → count
+  let girlsFirst = false;  // toggle state
+
+  // Returns rows in display order based on toggle, with original ri preserved
+  function orderedRows(evt) {
+    return evt.rows.map((row, ri) => ({ row, ri })).sort((a, b) => {
+      if (!girlsFirst) return 0; // keep original order
+      const ag = a.row.gender === 'Girls' ? 0 : 1;
+      const bg = b.row.gender === 'Girls' ? 0 : 1;
+      return ag - bg;
+    });
+  }
+
+  function buildMainTable() {
+    const tbody = document.getElementById('mainTbody');
+    tbody.innerHTML = '';
+    EVENTS.forEach((evt, ei) => {
+      orderedRows(evt).forEach(({ row, ri }) => {
+        const key = `${ei}-${ri}`;
+        const cls = row.gender === 'Boys' ? 'boys' : 'girls';
+        const label = `${evt.name} (${row.gender})`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="event-name ${cls}">${label}</span></td>
+          <td id="display-heat-${key}">${row.heatMin} min</td>
+          <td id="display-setup-${key}">${row.setupMin > 0 ? row.setupMin + ' min' : '<span class="dim">—</span>'}</td>
+          <td>
+            <input type="number" class="heats-input" min="0" max="99"
+              placeholder="0" id="input-${key}"
+              value="${heatCounts[key] ?? ''}"
+              data-ei="${ei}" data-ri="${ri}" />
+          </td>
+          <td><span class="row-total ${(heatCounts[key] || 0) > 0 ? '' : 'zero'}" id="total-${key}">—</span></td>
+        `;
+        tbody.appendChild(tr);
+        if ((heatCounts[key] || 0) > 0) recalcRow(ei, ri);
+      });
+    });
+  }
+
+  function recalcRow(ei, ri) {
+    const key = `${ei}-${ri}`;
+    const row = EVENTS[ei].rows[ri];
+    const heats = heatCounts[key] || 0;
+    const totalEl = document.getElementById(`total-${key}`);
+    if (!totalEl) return;
+    if (heats <= 0) {
+      totalEl.textContent = '—';
+      totalEl.className = 'row-total zero';
+    } else {
+      const t = row.setupMin + heats * row.heatMin;
+      totalEl.textContent = (t % 1 === 0 ? t : t.toFixed(2)) + ' min';
+      totalEl.className = 'row-total';
+    }
+  }
+
+  function onMainInput(e) {
+    if (!e.target.classList.contains('heats-input')) return;
+    const ei = +e.target.dataset.ei;
+    const ri = +e.target.dataset.ri;
+    const key = `${ei}-${ri}`;
+    heatCounts[key] = parseInt(e.target.value) || 0;
+    recalcRow(ei, ri);
+    updateSummary();
+  }
+
+  function getGrandTotal() {
+    let total = 0;
+    EVENTS.forEach((evt, ei) => {
+      evt.rows.forEach((row, ri) => {
+        const heats = heatCounts[`${ei}-${ri}`] || 0;
+        if (heats > 0) total += row.setupMin + heats * row.heatMin;
+      });
+    });
+    return total;
+  }
+
+  function updateSummary() {
+    const total = getGrandTotal();
+    const hours = Math.floor(total / 60);
+    const mins = Math.round(total % 60);
+    const rounded = Math.round(total * 10) / 10;
+
+    document.getElementById('totalDisplay').textContent =
+      (rounded % 1 === 0 ? rounded : rounded.toFixed(1)) + ' min';
+    document.getElementById('totalHMDisplay').textContent = `${hours}h ${mins}m`;
+
+    const startVal = document.getElementById('startTime').value;
+    if (startVal && total > 0) {
+      const [sh, sm] = startVal.split(':').map(Number);
+      const endMins = sh * 60 + sm + total;
+      const eh = Math.floor(endMins / 60) % 24;
+      const em = Math.round(endMins % 60);
+      const pad = n => String(n).padStart(2, '0');
+      const ampm = eh >= 12 ? 'PM' : 'AM';
+      const h12 = eh % 12 || 12;
+      document.getElementById('endTimeDisplay').textContent = `${h12}:${pad(em)} ${ampm}`;
+    } else {
+      document.getElementById('endTimeDisplay').textContent = '—';
+    }
+  }
+
+  function resetAll() {
+    heatCounts = {};
+    buildMainTable();
+    updateSummary();
+  }
+
+  // ── Gender order toggle ──────────────────────────────────────
+  function toggleGenderOrder() {
+    girlsFirst = !girlsFirst;
+    const toggle = document.getElementById('genderToggle');
+    toggle.classList.toggle('on', girlsFirst);
+    buildMainTable();
+  }
+
+  // ── Edit modal ───────────────────────────────────────────────
+  function openModal() {
+    populateModal(EVENTS);
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function populateModal(source) {
+    const tbody = document.getElementById('modalTbody');
+    tbody.innerHTML = '';
+    source.forEach((evt, ei) => {
+      evt.rows.forEach((row, ri) => {
+        const key = `${ei}-${ri}`;
+        const cls = row.gender === 'Boys' ? 'boys' : 'girls';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="event-name ${cls}">${evt.name} (${row.gender})</span></td>
+          <td>
+            <input type="number" class="modal-input" min="0" step="0.25"
+              id="m-heat-${key}" value="${row.heatMin}" />
+          </td>
+          <td>
+            <input type="number" class="modal-input" min="0" step="1"
+              id="m-setup-${key}" value="${row.setupMin}" />
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function saveModal() {
+    EVENTS.forEach((evt, ei) => {
+      evt.rows.forEach((row, ri) => {
+        const key = `${ei}-${ri}`;
+        const heatVal = parseFloat(document.getElementById(`m-heat-${key}`).value);
+        const setupVal = parseFloat(document.getElementById(`m-setup-${key}`).value);
+        if (!isNaN(heatVal) && heatVal >= 0) row.heatMin = heatVal;
+        if (!isNaN(setupVal) && setupVal >= 0) row.setupMin = setupVal;
+      });
+    });
+    closeModal();
+    buildMainTable();
+    updateSummary();
+  }
+
+  function resetModalToDefaults() {
+    populateModal(DEFAULTS);
+  }
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  document.addEventListener('input', onMainInput);
+  document.getElementById('startTime').addEventListener('input', updateSummary);
+
+  buildMainTable();
+</script>
+</body>
+</html>
