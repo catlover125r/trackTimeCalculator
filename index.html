@@ -455,38 +455,37 @@
 </div>
 
 <script>
-  // Default values — never mutated, used for "reset to defaults"
+  // setupMin is now per-event (shared across genders), not per-row
   const DEFAULTS = [
-    { name: "4x100 Relay",  rows: [{ gender:"Boys",  heatMin:2.5,  setupMin:0 }, { gender:"Girls", heatMin:2.5,  setupMin:0 }] },
-    { name: "1600 Meters",  rows: [{ gender:"Boys",  heatMin:6.25, setupMin:0 }, { gender:"Girls", heatMin:7.5,  setupMin:0 }] },
-    { name: "100m Hurdles", rows: [{ gender:"Girls", heatMin:1.5,  setupMin:6 }] },
-    { name: "65m Hurdles",  rows: [{ gender:"Boys",  heatMin:1.25, setupMin:6 }, { gender:"Girls", heatMin:1.25, setupMin:6 }] },
-    { name: "110m Hurdles", rows: [{ gender:"Boys",  heatMin:1.25, setupMin:6 }] },
-    { name: "400 Meters",   rows: [{ gender:"Boys",  heatMin:2,    setupMin:0 }, { gender:"Girls", heatMin:2,    setupMin:0 }] },
-    { name: "100 Meters",   rows: [{ gender:"Boys",  heatMin:1.3,  setupMin:4 }, { gender:"Girls", heatMin:1.3,  setupMin:4 }] },
-    { name: "800 Meters",   rows: [{ gender:"Boys",  heatMin:3,    setupMin:0 }, { gender:"Girls", heatMin:4,    setupMin:0 }] },
-    { name: "300m Hurdles", rows: [{ gender:"Boys",  heatMin:2,    setupMin:7 }, { gender:"Girls", heatMin:2.5,  setupMin:7 }] },
-    { name: "200 Meters",   rows: [{ gender:"Boys",  heatMin:1.5,  setupMin:6 }, { gender:"Girls", heatMin:1.5,  setupMin:6 }] },
-    { name: "3200 Meters",  rows: [{ gender:"Boys",  heatMin:13,   setupMin:0 }, { gender:"Girls", heatMin:15,   setupMin:0 }] },
-    { name: "4x400 Relay",  rows: [{ gender:"Boys",  heatMin:8,    setupMin:0 }, { gender:"Girls", heatMin:8,    setupMin:0 }] },
+    { name: "4x100 Relay",  setupMin:0, rows: [{ gender:"Boys",  heatMin:2.5  }, { gender:"Girls", heatMin:2.5  }] },
+    { name: "1600 Meters",  setupMin:0, rows: [{ gender:"Boys",  heatMin:6.25 }, { gender:"Girls", heatMin:7.5  }] },
+    { name: "100m Hurdles", setupMin:6, rows: [{ gender:"Girls", heatMin:1.5  }] },
+    { name: "65m Hurdles",  setupMin:6, rows: [{ gender:"Boys",  heatMin:1.25 }, { gender:"Girls", heatMin:1.25 }] },
+    { name: "110m Hurdles", setupMin:6, rows: [{ gender:"Boys",  heatMin:1.25 }] },
+    { name: "400 Meters",   setupMin:0, rows: [{ gender:"Boys",  heatMin:2    }, { gender:"Girls", heatMin:2    }] },
+    { name: "100 Meters",   setupMin:4, rows: [{ gender:"Boys",  heatMin:1.3  }, { gender:"Girls", heatMin:1.3  }] },
+    { name: "800 Meters",   setupMin:0, rows: [{ gender:"Boys",  heatMin:3    }, { gender:"Girls", heatMin:4    }] },
+    { name: "300m Hurdles", setupMin:7, rows: [{ gender:"Boys",  heatMin:2    }, { gender:"Girls", heatMin:2.5  }] },
+    { name: "200 Meters",   setupMin:6, rows: [{ gender:"Boys",  heatMin:1.5  }, { gender:"Girls", heatMin:1.5  }] },
+    { name: "3200 Meters",  setupMin:0, rows: [{ gender:"Boys",  heatMin:13   }, { gender:"Girls", heatMin:15   }] },
+    { name: "4x400 Relay",  setupMin:0, rows: [{ gender:"Boys",  heatMin:8    }, { gender:"Girls", heatMin:8    }] },
   ];
 
-  // Deep-clone defaults into live data
   function cloneDefaults() {
     return DEFAULTS.map(evt => ({
       name: evt.name,
+      setupMin: evt.setupMin,
       rows: evt.rows.map(r => ({ ...r }))
     }));
   }
 
   let EVENTS = cloneDefaults();
   let heatCounts = {};     // "ei-ri" → count
-  let girlsFirst = false;  // toggle state
+  let girlsFirst = false;
 
-  // Returns rows in display order based on toggle, with original ri preserved
   function orderedRows(evt) {
     return evt.rows.map((row, ri) => ({ row, ri })).sort((a, b) => {
-      if (!girlsFirst) return 0; // keep original order
+      if (!girlsFirst) return 0;
       const ag = a.row.gender === 'Girls' ? 0 : 1;
       const bg = b.row.gender === 'Girls' ? 0 : 1;
       return ag - bg;
@@ -497,15 +496,27 @@
     const tbody = document.getElementById('mainTbody');
     tbody.innerHTML = '';
     EVENTS.forEach((evt, ei) => {
-      orderedRows(evt).forEach(({ row, ri }) => {
+      const ordered = orderedRows(evt);
+      ordered.forEach(({ row, ri }, displayIdx) => {
         const key = `${ei}-${ri}`;
         const cls = row.gender === 'Boys' ? 'boys' : 'girls';
         const label = `${evt.name} (${row.gender})`;
+        // Show setup on the first displayed row only; "shared" on subsequent
+        let setupCell;
+        if (displayIdx === 0) {
+          setupCell = evt.setupMin > 0
+            ? `${evt.setupMin} min`
+            : '<span class="dim">—</span>';
+        } else {
+          setupCell = evt.setupMin > 0
+            ? '<span class="dim">shared ↑</span>'
+            : '<span class="dim">—</span>';
+        }
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="event-name ${cls}">${label}</span></td>
-          <td id="display-heat-${key}">${row.heatMin} min</td>
-          <td id="display-setup-${key}">${row.setupMin > 0 ? row.setupMin + ' min' : '<span class="dim">—</span>'}</td>
+          <td>${row.heatMin} min</td>
+          <td>${setupCell}</td>
           <td>
             <input type="number" class="heats-input" min="0" max="99"
               placeholder="0" id="input-${key}"
@@ -530,7 +541,7 @@
       totalEl.textContent = '—';
       totalEl.className = 'row-total zero';
     } else {
-      const t = row.setupMin + heats * row.heatMin;
+      const t = heats * row.heatMin;
       totalEl.textContent = (t % 1 === 0 ? t : t.toFixed(2)) + ' min';
       totalEl.className = 'row-total';
     }
@@ -549,9 +560,12 @@
   function getGrandTotal() {
     let total = 0;
     EVENTS.forEach((evt, ei) => {
+      // Setup counted once per event if ANY gender has heats
+      const anyHeats = evt.rows.some((_, ri) => (heatCounts[`${ei}-${ri}`] || 0) > 0);
+      if (anyHeats) total += evt.setupMin;
       evt.rows.forEach((row, ri) => {
         const heats = heatCounts[`${ei}-${ri}`] || 0;
-        if (heats > 0) total += row.setupMin + heats * row.heatMin;
+        total += heats * row.heatMin;
       });
     });
     return total;
@@ -609,6 +623,10 @@
       evt.rows.forEach((row, ri) => {
         const key = `${ei}-${ri}`;
         const cls = row.gender === 'Boys' ? 'boys' : 'girls';
+        // Setup input only on first row; subsequent rows show "shared"
+        const setupCell = ri === 0
+          ? `<input type="number" class="modal-input" min="0" step="1" id="m-setup-${ei}" value="${evt.setupMin}" />`
+          : `<span class="dim" style="font-size:12px">shared with ${evt.rows[0].gender}</span>`;
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><span class="event-name ${cls}">${evt.name} (${row.gender})</span></td>
@@ -616,10 +634,7 @@
             <input type="number" class="modal-input" min="0" step="0.25"
               id="m-heat-${key}" value="${row.heatMin}" />
           </td>
-          <td>
-            <input type="number" class="modal-input" min="0" step="1"
-              id="m-setup-${key}" value="${row.setupMin}" />
-          </td>
+          <td>${setupCell}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -632,12 +647,16 @@
 
   function saveModal() {
     EVENTS.forEach((evt, ei) => {
+      // Setup is per-event; only one input exists (on first row)
+      const setupEl = document.getElementById(`m-setup-${ei}`);
+      if (setupEl) {
+        const setupVal = parseFloat(setupEl.value);
+        if (!isNaN(setupVal) && setupVal >= 0) evt.setupMin = setupVal;
+      }
       evt.rows.forEach((row, ri) => {
         const key = `${ei}-${ri}`;
         const heatVal = parseFloat(document.getElementById(`m-heat-${key}`).value);
-        const setupVal = parseFloat(document.getElementById(`m-setup-${key}`).value);
         if (!isNaN(heatVal) && heatVal >= 0) row.heatMin = heatVal;
-        if (!isNaN(setupVal) && setupVal >= 0) row.setupMin = setupVal;
       });
     });
     closeModal();
